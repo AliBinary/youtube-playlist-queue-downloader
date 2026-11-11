@@ -11,8 +11,18 @@ import time
 app = Flask(__name__)
 CORS(app)
 
-DOWNLOAD_FOLDER = os.path.join(os.getcwd(), "YouTube_Downloads")
+
+import os
+
+# شناسایی خودکار پوشه Downloads در ویندوز یا سایر سیستم‌عامل‌ها
+user_home = os.path.expanduser("~")
+DOWNLOAD_FOLDER = os.path.join(user_home, "Downloads", "YouTube_Downloads")
+# ایجاد پوشه در صورت عدم وجود
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+
+# DOWNLOAD_FOLDER = os.path.join(os.getcwd(), "YouTube_Downloads")
+# os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 
 class DownloadAbortException(Exception):
@@ -43,9 +53,28 @@ DEFAULT_QUALITIES = [
 ]
 
 WINDOWS_RESERVED_NAMES = {
-    "CON", "PRN", "AUX", "NUL",
-    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    "COM1",
+    "COM2",
+    "COM3",
+    "COM4",
+    "COM5",
+    "COM6",
+    "COM7",
+    "COM8",
+    "COM9",
+    "LPT1",
+    "LPT2",
+    "LPT3",
+    "LPT4",
+    "LPT5",
+    "LPT6",
+    "LPT7",
+    "LPT8",
+    "LPT9",
 }
 
 
@@ -142,8 +171,12 @@ def parse_youtube_url(url):
                 if path_parts[1] != "videoseries":
                     raw_vid = path_parts[1]
 
-        video_id = raw_vid.strip() if isinstance(raw_vid, str) and raw_vid.strip() else None
-        list_id = raw_list.strip() if isinstance(raw_list, str) and raw_list.strip() else None
+        video_id = (
+            raw_vid.strip() if isinstance(raw_vid, str) and raw_vid.strip() else None
+        )
+        list_id = (
+            raw_list.strip() if isinstance(raw_list, str) and raw_list.strip() else None
+        )
 
         if video_id and list_id:
             url_type = "both"
@@ -154,14 +187,14 @@ def parse_youtube_url(url):
         else:
             return result
 
-        single_url = (
-            f"https://www.youtube.com/watch?v={video_id}" if video_id else None
-        )
+        single_url = f"https://www.youtube.com/watch?v={video_id}" if video_id else None
 
         playlist_url = None
         if list_id:
             if list_id.upper().startswith("RD") and video_id:
-                playlist_url = f"https://www.youtube.com/watch?v={video_id}&list={list_id}"
+                playlist_url = (
+                    f"https://www.youtube.com/watch?v={video_id}&list={list_id}"
+                )
             else:
                 playlist_url = f"https://www.youtube.com/playlist?list={list_id}"
 
@@ -338,9 +371,7 @@ def check_already_downloaded(
     safe_title = sanitize_name(title)
     expected_stem = build_base_stem(index, safe_title, is_single, quality).lower()
     legacy_stem = (
-        safe_title.lower()
-        if is_single
-        else f"{int(index):02d} - {safe_title}".lower()
+        safe_title.lower() if is_single else f"{int(index):02d} - {safe_title}".lower()
     )
 
     valid_exts = (
@@ -519,7 +550,10 @@ def extract_url():
             with yt_dlp.YoutubeDL(pl_opts) as ydl:
                 info = ydl.extract_info(target_url, download=False)
                 if not info:
-                    return jsonify({"error": "اطلاعاتی از این پلی‌لیست دریافت نشد."}), 400
+                    return (
+                        jsonify({"error": "اطلاعاتی از این پلی‌لیست دریافت نشد."}),
+                        400,
+                    )
 
                 if "entries" not in info:
                     qualities = extract_available_qualities(info)
@@ -940,9 +974,7 @@ def cleanup_item():
     playlist_folder = os.path.join(DOWNLOAD_FOLDER, playlist_title)
     safe_video_title = sanitize_name(title)
 
-    cleanup_partial_files(
-        playlist_folder, index, is_single, safe_video_title, quality
-    )
+    cleanup_partial_files(playlist_folder, index, is_single, safe_video_title, quality)
     return jsonify({"success": True})
 
 
