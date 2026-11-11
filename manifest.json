@@ -1,15 +1,25 @@
 {
     "manifest_version": 2,
     "name": "YouTube Playlist Queue Downloader",
-    "version": "2.0",
+    "version": "2.1",
     "description": "دانلود تکی و نوبتی پلی‌لیست یوتیوب با حافظه دائمی در پس‌زمینه",
     "permissions": ["activeTab", "tabs", "storage", "http://127.0.0.1:5000/*"],
+    "icons": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+    },
     "background": {
         "scripts": ["background.js"],
         "persistent": true
     },
     "browser_action": {
         "default_popup": "popup.html",
-        "default_title": "دانلودر پلی‌لیست"
+        "default_title": "دانلودر پلی‌لیست",
+        "default_icon": {
+            "16": "icon.png",
+            "48": "icon.png",
+            "128": "icon.png"
+        }
     }
 }
