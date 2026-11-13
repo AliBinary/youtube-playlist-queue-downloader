@@ -2,7 +2,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     globalThis.browser = chrome;
 }
 
-const SERVER_URL = 'http://127.0.0.1:5000';
+const SERVER_URL = 'http://127.0.0.1:8000';
 
 const DEFAULT_QUALITIES = [
     { value: '1080', label: '1080p (Full HD)' },

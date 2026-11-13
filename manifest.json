@@ -3,7 +3,7 @@
     "name": "YouTube Playlist Queue Downloader",
     "version": "2.1",
     "description": "دانلود تکی و نوبتی پلی‌لیست یوتیوب با حافظه دائمی در پس‌زمینه",
-    "permissions": ["activeTab", "tabs", "storage", "http://127.0.0.1:5000/*"],
+    "permissions": ["activeTab", "tabs", "storage", "http://127.0.0.1:8000/*"],
     "icons": {
         "16": "icon.png",
         "48": "icon.png",
