@@ -147,6 +147,7 @@ const resumeBannerBtn = document.getElementById('resumeBannerBtn');
 
 const selectionSection = document.getElementById('selection-section');
 const extractedPlTitle = document.getElementById('extracted-pl-title');
+const customFolderInput = document.getElementById('customFolderInput');
 const selectAllContainer = document.getElementById('selectAllContainer');
 const selectAllCheckbox = document.getElementById('selectAllCheckbox');
 const extractListEl = document.getElementById('extract-list');
@@ -308,12 +309,16 @@ function renderUI(state) {
         const selectedCount = vids.filter((v) => v.selected).length;
 
         if (isPl) {
-            extractedPlTitle.textContent = `پلی‌لیست: ${state.extractedPlaylist.title} (${selectedCount} از ${vids.length})`;
+            extractedPlTitle.textContent = `ویدیوهای پلی‌لیست (${selectedCount} از ${vids.length} انتخاب شده)`;
             selectAllContainer.style.display = 'flex';
             selectAllCheckbox.checked = selectedCount === vids.length;
         } else {
-            extractedPlTitle.textContent = 'تک‌فیلم آماده دانلود:';
+            extractedPlTitle.textContent = 'مشخصات و نام فایل تک‌فیلم:';
             selectAllContainer.style.display = 'none';
+        }
+
+        if (document.activeElement !== customFolderInput) {
+            customFolderInput.value = state.extractedPlaylist.title || '';
         }
 
         const qualities =
@@ -347,14 +352,14 @@ function renderUI(state) {
             extractListEl.innerHTML = '';
             vids.forEach((v) => {
                 const li = document.createElement('li');
-                const label = document.createElement('label');
-                label.className = 'vid-label';
-                label.title = v.title;
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'vid-row';
 
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
                 cb.dataset.vidIndex = String(v.index);
                 cb.checked = v.selected;
+                cb.title = 'انتخاب برای دانلود';
                 cb.addEventListener('change', async () => {
                     const s = await sendMsg({
                         action: 'TOGGLE_VIDEO_SELECT',
@@ -363,15 +368,34 @@ function renderUI(state) {
                     });
                     renderUI(s);
                 });
+                rowDiv.appendChild(cb);
 
-                const span = document.createElement('span');
-                span.textContent = v.is_single
-                    ? v.title
-                    : `${String(v.index).padStart(2, '0')} - ${v.title}`;
+                if (!v.is_single) {
+                    const idxBadge = document.createElement('span');
+                    idxBadge.className = 'vid-index-badge';
+                    idxBadge.textContent = String(v.index).padStart(2, '0');
+                    idxBadge.title = 'شماره ردیف در پلی‌لیست';
+                    rowDiv.appendChild(idxBadge);
+                }
 
-                label.appendChild(cb);
-                label.appendChild(span);
-                li.appendChild(label);
+                const titleInput = document.createElement('input');
+                titleInput.type = 'text';
+                titleInput.className = 'vid-title-input';
+                titleInput.dataset.vidTitleIndex = String(v.index);
+                titleInput.value = v.title;
+                titleInput.placeholder = 'نام فایل خروجی...';
+                titleInput.title =
+                    'می‌توانید نام فایل خروجی را اینجا تغییر دهید';
+                titleInput.addEventListener('input', () => {
+                    sendMsg({
+                        action: 'UPDATE_EXTRACTED_VIDEO_TITLE',
+                        index: v.index,
+                        title: titleInput.value,
+                    });
+                });
+
+                rowDiv.appendChild(titleInput);
+                li.appendChild(rowDiv);
                 extractListEl.appendChild(li);
             });
         } else {
@@ -385,6 +409,19 @@ function renderUI(state) {
                     cb.checked = found.selected;
                 }
             });
+
+            const titleInputs = extractListEl.querySelectorAll(
+                'input.vid-title-input',
+            );
+            titleInputs.forEach((inp) => {
+                if (document.activeElement === inp) return;
+                const idx = Number(inp.dataset.vidTitleIndex);
+                const found = vids.find((v) => v.index === idx);
+                if (found && inp.value !== found.title) {
+                    inp.value = found.title;
+                }
+            });
+
             if (qualitySelect.value !== state.selectedQuality) {
                 qualitySelect.value = state.selectedQuality;
             }
@@ -544,6 +581,13 @@ browser.runtime.onMessage.addListener((message) => {
 
 urlInput.addEventListener('input', () => {
     updateLinkBadgeAndToggle(urlInput.value, true);
+});
+
+customFolderInput.addEventListener('input', () => {
+    sendMsg({
+        action: 'UPDATE_EXTRACTED_PLAYLIST_TITLE',
+        title: customFolderInput.value,
+    });
 });
 
 allowPlaylistCheckbox.addEventListener('change', async () => {

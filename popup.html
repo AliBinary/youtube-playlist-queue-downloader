@@ -138,7 +138,7 @@
                 display: flex;
                 transition: color 0.2s;
             }
-            input[type='text'] {
+            #playlistUrl {
                 width: 100%;
                 padding: 10px 36px 10px 12px;
                 background: var(--bg-input);
@@ -151,13 +151,14 @@
                 outline: none;
                 direction: ltr;
                 text-align: left;
+                user-select: text;
             }
-            input[type='text']::placeholder {
+            #playlistUrl::placeholder {
                 direction: rtl;
                 text-align: right;
                 color: #64748b;
             }
-            input[type='text']:focus {
+            #playlistUrl:focus {
                 border-color: var(--accent-primary);
                 box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
             }
@@ -165,7 +166,6 @@
                 color: var(--accent-primary);
             }
 
-            /* سوییچ مدرن با انیمیشن خطا */
             @keyframes shakeError {
                 0%,
                 100% {
@@ -336,7 +336,6 @@
                 display: none;
             }
 
-            /* نوار وضعیت با حالت خطا */
             .status-bar {
                 display: flex;
                 align-items: center;
@@ -528,6 +527,90 @@
             .select-all-label:hover {
                 color: #7dd3fc;
             }
+
+            /* استایل بخش ویرایش نام پوشه و نام فایل‌ها */
+            .folder-edit-box {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                margin-bottom: 8px;
+                background: rgba(15, 23, 42, 0.65);
+                padding: 6px 9px;
+                border-radius: 8px;
+                border: 1px solid var(--border-color);
+                font-size: 10.5px;
+                font-weight: bold;
+                color: #cbd5e1;
+            }
+            .folder-edit-label {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                white-space: nowrap;
+                color: #94a3b8;
+            }
+            .edit-input {
+                flex: 1;
+                background: #090d16;
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                border-radius: 6px;
+                padding: 5px 8px;
+                color: var(--text-main);
+                font-family: inherit;
+                font-size: 11px;
+                outline: none;
+                direction: auto;
+                text-align: right;
+                user-select: text;
+                transition:
+                    border-color 0.2s,
+                    box-shadow 0.2s;
+            }
+            .edit-input:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+            }
+            .vid-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                width: 100%;
+            }
+            .vid-index-badge {
+                font-size: 10px;
+                font-family: 'JetBrains Mono', Consolas, monospace;
+                color: #38bdf8;
+                background: rgba(14, 165, 233, 0.12);
+                border: 1px solid rgba(14, 165, 233, 0.25);
+                padding: 2px 5px;
+                border-radius: 5px;
+                flex-shrink: 0;
+            }
+            .vid-title-input {
+                flex: 1;
+                background: rgba(9, 13, 22, 0.75);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 6px;
+                padding: 5px 8px;
+                color: #f1f5f9;
+                font-family: inherit;
+                font-size: 11px;
+                outline: none;
+                direction: auto;
+                user-select: text;
+                transition:
+                    border-color 0.2s,
+                    background 0.2s;
+            }
+            .vid-title-input:hover {
+                border-color: rgba(255, 255, 255, 0.18);
+            }
+            .vid-title-input:focus {
+                background: #090d16;
+                border-color: var(--blue);
+                box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18);
+            }
+
             .quality-box {
                 display: flex;
                 align-items: center;
@@ -573,8 +656,8 @@
             }
             #extract-list li,
             #queue-list li {
-                padding: 7px 8px;
-                margin-bottom: 3px;
+                padding: 6px 8px;
+                margin-bottom: 4px;
                 border-radius: 6px;
                 background: rgba(30, 41, 59, 0.55);
                 border: 1px solid transparent;
@@ -594,17 +677,6 @@
             #queue-list li:hover {
                 background: var(--bg-card-hover);
                 border-color: rgba(255, 255, 255, 0.07);
-            }
-            .vid-label {
-                display: flex;
-                align-items: center;
-                gap: 7px;
-                cursor: pointer;
-                width: 100%;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                color: #e2e8f0;
             }
             input[type='checkbox'] {
                 accent-color: var(--accent-primary);
@@ -904,12 +976,39 @@
 
         <div id="selection-section">
             <div class="sec-header">
-                <span id="extracted-pl-title">انتخاب ویدیوها</span>
+                <span id="extracted-pl-title">انتخاب و ویرایش نام خروجی</span>
                 <label class="select-all-label" id="selectAllContainer">
                     <input type="checkbox" id="selectAllCheckbox" checked />
                     <span>انتخاب همه</span>
                 </label>
             </div>
+
+            <div class="folder-edit-box">
+                <span class="folder-edit-label">
+                    <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#38bdf8"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path
+                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                        />
+                    </svg>
+                    <span>نام پوشه ذخیره:</span>
+                </span>
+                <input
+                    type="text"
+                    id="customFolderInput"
+                    class="edit-input"
+                    placeholder="نام پوشه..."
+                />
+            </div>
+
             <ul id="extract-list"></ul>
             <div class="quality-box">
                 <svg

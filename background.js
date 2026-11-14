@@ -81,7 +81,7 @@ function analyzeYoutubeUrl(rawUrl) {
         }
 
         const videoId = rawVid && rawVid.trim() ? rawVid.trim() : null;
-        const listId = rawList && rawList.trim() ? rawList.trim() : null;
+        const listId = rawList && rawList.trim() ? rawVid.trim() : null;
 
         if (videoId && listId) {
             result.type = 'both';
@@ -162,19 +162,21 @@ const initPromise = getStorageState().then((res) => {
     }
 });
 
-function saveState() {
+function saveState(broadcast = true) {
     try {
         browser.storage.local.set({ downloaderState: state });
     } catch (e) {}
-    try {
-        const p = browser.runtime.sendMessage({
-            action: 'STATE_UPDATED',
-            state,
-        });
-        if (p && typeof p.catch === 'function') {
-            p.catch(() => {});
-        }
-    } catch (e) {}
+    if (broadcast) {
+        try {
+            const p = browser.runtime.sendMessage({
+                action: 'STATE_UPDATED',
+                state,
+            });
+            if (p && typeof p.catch === 'function') {
+                p.catch(() => {});
+            }
+        } catch (e) {}
+    }
 }
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -214,6 +216,23 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     (v) => (v.selected = message.selectAll),
                 );
                 saveState();
+            }
+            sendResponse(state);
+        } else if (message.action === 'UPDATE_EXTRACTED_PLAYLIST_TITLE') {
+            if (state.extractedPlaylist) {
+                state.extractedPlaylist.title = message.title;
+                saveState(false);
+            }
+            sendResponse(state);
+        } else if (message.action === 'UPDATE_EXTRACTED_VIDEO_TITLE') {
+            if (state.extractedPlaylist) {
+                const vid = state.extractedPlaylist.videos.find(
+                    (v) => v.index === message.index,
+                );
+                if (vid) {
+                    vid.title = message.title;
+                    saveState(false);
+                }
             }
             sendResponse(state);
         } else if (message.action === 'ENQUEUE_SELECTED') {
@@ -498,7 +517,7 @@ async function extractUrl(url, allowPlaylist) {
             resolved_url: data.resolved_url || effectiveUrl,
             url_type: parsed.type,
             is_playlist: Boolean(data.is_playlist),
-            title: data.playlist_title,
+            title: data.playlist_title || 'Single_Videos',
             qualities: qualities,
             videos: data.videos.map((v) => ({
                 ...v,
@@ -508,9 +527,9 @@ async function extractUrl(url, allowPlaylist) {
 
         state.statusError = false;
         if (data.is_playlist) {
-            state.statusText = `پلی‌لیست «${data.playlist_title}» (${data.videos.length} ویدیو) آماده انتخاب است.`;
+            state.statusText = `پلی‌لیست «${data.playlist_title}» (${data.videos.length} ویدیو) آماده انتخاب و ویرایش نام است.`;
         } else {
-            state.statusText = `تک‌فیلم استخراج شد (${qualities.length} کیفیت موجود).`;
+            state.statusText = `تک‌فیلم استخراج شد (${qualities.length} کیفیت موجود). می‌توانید نام فایل را تغییر دهید.`;
         }
     } catch (err) {
         if (currentReqId !== extractRequestId) return;
@@ -535,11 +554,17 @@ function enqueueSelectedVideos(quality) {
         return;
     }
 
-    const playlistTitle = state.extractedPlaylist.title;
+    const rawFolderTitle = (state.extractedPlaylist.title || '').trim();
+    const playlistTitle =
+        rawFolderTitle ||
+        (state.extractedPlaylist.is_playlist
+            ? 'YouTube_Playlist'
+            : 'Single_Videos');
     const chosenQuality = quality || state.selectedQuality || '720';
     let addedCount = 0;
 
     selectedVideos.forEach((v) => {
+        const finalVideoTitle = (v.title || '').trim() || `Video ${v.index}`;
         const existingItem = state.queue.find(
             (q) =>
                 q.url === v.url &&
@@ -550,6 +575,7 @@ function enqueueSelectedVideos(quality) {
             existingItem &&
             ['error', 'cancelled'].includes(existingItem.status)
         ) {
+            existingItem.title = finalVideoTitle;
             existingItem.status = 'waiting';
             existingItem.statusLabel = 'در صف انتظار';
             existingItem.errorDetail = null;
@@ -558,7 +584,7 @@ function enqueueSelectedVideos(quality) {
             state.queue.push({
                 item_id: `${Date.now()}_${v.index}_${Math.random().toString(36).slice(2, 7)}`,
                 index: v.index,
-                title: v.title,
+                title: finalVideoTitle,
                 url: v.url,
                 duration: v.duration,
                 is_single: Boolean(v.is_single),
