@@ -53,30 +53,44 @@ function analyzeYoutubeUrl(rawUrl) {
     try {
         const u = new URL(normalized);
         const host = u.hostname.replace(/^www\./i, '').toLowerCase();
-        const validHosts = [
-            'youtube.com',
-            'm.youtube.com',
-            'music.youtube.com',
-            'gaming.youtube.com',
-            'youtu.be',
-            'youtube-nocookie.com',
-        ];
-        if (!validHosts.includes(host)) return result;
+        const isYtDomain =
+            host === 'youtu.be' ||
+            host === 'youtube.com' ||
+            host.endsWith('.youtube.com') ||
+            host === 'youtube-nocookie.com' ||
+            host.endsWith('.youtube-nocookie.com');
+
+        if (!isYtDomain) return result;
 
         let rawVid = null;
         const rawList = u.searchParams.get('list');
         const pathParts = u.pathname.split('/').filter(Boolean);
 
         if (host === 'youtu.be') {
-            rawVid = pathParts[0] || null;
+            if (
+                pathParts[0] &&
+                !['playlist', 'watch', 'embed', 'videoseries'].includes(
+                    pathParts[0].toLowerCase(),
+                )
+            ) {
+                rawVid = pathParts[0];
+            } else if (u.searchParams.get('v')) {
+                rawVid = u.searchParams.get('v');
+            }
         } else {
             if (u.searchParams.get('v')) {
                 rawVid = u.searchParams.get('v');
             } else if (
                 pathParts.length >= 2 &&
-                ['shorts', 'live', 'embed', 'v', 'e'].includes(pathParts[0])
+                ['shorts', 'live', 'embed', 'v', 'e', 'watch'].includes(
+                    pathParts[0].toLowerCase(),
+                )
             ) {
-                if (pathParts[1] !== 'videoseries') {
+                if (
+                    !['videoseries', 'playlist'].includes(
+                        pathParts[1].toLowerCase(),
+                    )
+                ) {
                     rawVid = pathParts[1];
                 }
             }
@@ -103,7 +117,15 @@ function analyzeYoutubeUrl(rawUrl) {
             : null;
 
         if (listId) {
-            if (listId.toUpperCase().startsWith('RD') && videoId) {
+            const upperList = listId.toUpperCase();
+            if (
+                (upperList.startsWith('RD') ||
+                    upperList.startsWith('UL') ||
+                    upperList.startsWith('PU') ||
+                    upperList.startsWith('LL') ||
+                    upperList.startsWith('FL')) &&
+                videoId
+            ) {
                 result.playlistUrl = `https://www.youtube.com/watch?v=${videoId}&list=${listId}`;
             } else {
                 result.playlistUrl = `https://www.youtube.com/playlist?list=${listId}`;

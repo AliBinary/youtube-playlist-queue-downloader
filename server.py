@@ -110,12 +110,7 @@ def format_bytes(b):
 
 def parse_youtube_url(url):
     """
-    تحلیل دقیق تمام فرمت‌های لینک یوتیوب:
-    - watch?v=ID
-    - watch?v=ID&list=LIST_ID&index=N
-    - youtu.be/ID یا youtu.be/ID?list=LIST_ID
-    - youtube.com/shorts/ID یا youtube.com/live/ID یا youtube.com/embed/ID
-    - youtube.com/playlist?list=LIST_ID
+    تحلیل جامع تمام فرمت‌های لینک یوتیوب (تک‌فیلم، شورتس، لایو، میکس و پلی‌لیست‌ها)
     """
     result = {
         "is_valid": False,
@@ -138,15 +133,14 @@ def parse_youtube_url(url):
         if host.startswith("www."):
             host = host[4:]
 
-        valid_hosts = {
-            "youtube.com",
-            "m.youtube.com",
-            "music.youtube.com",
-            "gaming.youtube.com",
-            "youtu.be",
-            "youtube-nocookie.com",
-        }
-        if host not in valid_hosts:
+        is_yt_domain = (
+            host == "youtu.be"
+            or host == "youtube.com"
+            or host.endswith(".youtube.com")
+            or host == "youtube-nocookie.com"
+            or host.endswith(".youtube-nocookie.com")
+        )
+        if not is_yt_domain:
             return result
 
         qs = parse_qs(parsed.query)
@@ -156,19 +150,27 @@ def parse_youtube_url(url):
         raw_list = (qs.get("list") or [None])[0]
 
         if host == "youtu.be":
-            if path_parts:
+            if path_parts and path_parts[0].lower() not in (
+                "playlist",
+                "watch",
+                "embed",
+                "videoseries",
+            ):
                 raw_vid = path_parts[0]
+            elif "v" in qs and qs["v"]:
+                raw_vid = qs["v"][0]
         else:
             if "v" in qs and qs["v"]:
                 raw_vid = qs["v"][0]
-            elif len(path_parts) >= 2 and path_parts[0] in (
+            elif len(path_parts) >= 2 and path_parts[0].lower() in (
                 "shorts",
                 "live",
                 "embed",
                 "v",
                 "e",
+                "watch",
             ):
-                if path_parts[1] != "videoseries":
+                if path_parts[1].lower() not in ("videoseries", "playlist"):
                     raw_vid = path_parts[1]
 
         video_id = (
@@ -191,7 +193,7 @@ def parse_youtube_url(url):
 
         playlist_url = None
         if list_id:
-            if list_id.upper().startswith("RD") and video_id:
+            if list_id.upper().startswith(("RD", "UL", "PU", "LL", "FL")) and video_id:
                 playlist_url = (
                     f"https://www.youtube.com/watch?v={video_id}&list={list_id}"
                 )
